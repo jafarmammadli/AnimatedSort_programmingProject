@@ -28,6 +28,12 @@ window = Tk()
 
 window.title("Animated Sort 🔥")
 
+
+icon = PhotoImage(file="adidas.png") # the adidas logo looks like animated sort, thats why i put it :)
+window.iconphoto(True, icon)
+
+
+
 window.geometry("840x650")
 window.config(background="#410ec4")
 
