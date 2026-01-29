@@ -6,3 +6,5 @@ Project Overview
 
 -- The program has a select menu to select algorithms, a speed slider (1-67(don't ask why)) to adjust animation speed, and a "generate" button to create new random order.
 
+-- You can download the project.py (and preferably adidas.png) and run it to see the functionality.
+

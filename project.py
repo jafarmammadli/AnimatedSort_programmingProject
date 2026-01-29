@@ -5,15 +5,6 @@
 from tkinter import *
 import random
 
-bars = []
-values = [] 
-bar_width = 10
-can_size = 600 
-num_bars = 50
-worker = None
-is_verify = False
-
-
 
 OPTIONS = [
     "Bubble Sort",
@@ -22,385 +13,334 @@ OPTIONS = [
     "Quick Sort"
 ]
 
-#region GUI WINDOW SETUP
 
-window = Tk() 
-
-window.title("Animated Sort 🔥")
-
-
-icon = PhotoImage(file="adidas.png") # the adidas logo looks like animated sort, thats why i put it :)
-window.iconphoto(True, icon)
-
-
-
-window.geometry("840x650")
-window.config(background="#410ec4")
-
-#endregion
-
-
-# CANvVAS
-canvas = Canvas(window, width=can_size, height=can_size, bg='#1a1a1a')  
-canvas.pack(side=LEFT, padx=10, pady=10)
-
-settings_frame = Frame(window, background="#8000FF") 
-settings_frame.pack(side=RIGHT, padx= 10, pady=10)
-
-
-
-#region HELPER FUNCTIONS
-
-def colorBar(bar, color):
-    canvas.itemconfig(bar, fill=color)
-
-
-def swap(pos0, pos1):
+class SortVisualizer:
     
-    x0, _, x0b, _ = canvas.coords(pos0)
-    x1, _, x1b, _ = canvas.coords(pos1)
-    
-    canvas.itemconfig(pos0, fill='red')
-    canvas.itemconfig(pos1, fill='#00ff00')
-    
-    canvas.move(pos0, x1 - x0, 0)
-    canvas.move(pos1, x0 - x1, 0)
-
-#endregion
-
-
-#region GENERATE BARS FUNCTION
-
-def generate_bars():  
-    global bars, values, worker, is_verify
-    
-    canvas.delete('all')
-    bars = []
-    values = []
-
-    heights = [random.randint(10, can_size - 10) for _ in range(num_bars)]
-    
-    for i in range(num_bars):
+    def __init__(self):
+        # State variables (previously global)
+        self.bars = []
+        self.values = []
+        self.bar_width = 10
+        self.can_size = 600
+        self.num_bars = 50
+        self.worker = None
+        self.is_verify = False
         
-        height = heights[i]
+        # GUI setup
+        self.window = Tk()
+        self.window.title("Animated Sort 🔥")
         
-        bar = canvas.create_rectangle(
-            i * bar_width,                     
-            can_size - height,                 
-            (i* bar_width) + bar_width,        
-            can_size,                          
-            fill = 'white',     
-            outline= '#444444'
+        icon = PhotoImage(file="adidas.png")  # the adidas logo looks like animated sort, thats why i put it :)
+        self.window.iconphoto(True, icon)
+        
+        self.window.geometry("840x650")
+        self.window.config(background="#410ec4")
+        
+        # Canvas
+        self.canvas = Canvas(self.window, width=self.can_size, height=self.can_size, bg='#1a1a1a')
+        self.canvas.pack(side=LEFT, padx=10, pady=10)
+        
+        self.settings_frame = Frame(self.window, background="#8000FF")
+        self.settings_frame.pack(side=RIGHT, padx=10, pady=10)
+        
+        # Create GUI controls
+        self._create_controls()
+        
+        # Generate initial bars
+        self.generate_bars()
+    
+    def _create_controls(self):
+        # GENERATE BUTTON
+        self.generate_btn = Button(
+            self.settings_frame,
+            text="GENERATE!",
+            command=self.generate_bars,
+            bg='red',
+            font=('Arial', 10, 'bold'),
+            width=20
         )
+        self.generate_btn.pack(pady=10)
         
-        bars.append(bar)
-        values.append(height)
-
-    worker = None
-    is_verify = False
-
-#endregion
-
-
-#region BUBBLE SORT
-
-def bubble_sort():
-    
-    global bars, values
-    n = len(values)
-    
-    for i in range(n-1):
-        for j in range(n-i-1):
-            
-            if values[j] > values[j+1]:
-                values[j], values[j+1] = values[j+1], values[j]
-                bars[j], bars[j+1] = bars[j+1], bars[j]
-                swap(bars[j], bars[j+1])
-                yield
-            
-            else:
-                colorBar(bars[j], 'white')
-
-#endregion
-
-
-
-#region INSERTION SORT
-
-def insertion_sort():
-    
-    global bars, values
-    
-    for i in range(1, len(values)):
-        key = values[i]
-        key_bar = bars[i]
-        j = i - 1
-    
-        while j >= 0 and values[j] > key:
-            values[j+1] = values[j]
-            bars[j+1], bars[j] = bars[j], bars[j+1]
-            swap(bars[j+1], bars[j])
-            
-            yield
-            j -= 1
-    
-        values[j+1] = key
-        bars[j+1] = key_bar
-
-#endregion
-
-
-#region MERGE SORT
-
-def merge_sort_helper(l, r):
-    
-    global bars, values
-    
-    if l < r:
-        m = (l + r) // 2
+        # Selection MENU
+        self.variable = StringVar(self.window)
+        self.variable.set(OPTIONS[0])
+        self.dropdown = OptionMenu(self.settings_frame, self.variable, *OPTIONS)
+        self.dropdown.config(width=18, bg='white')
+        self.dropdown.pack(pady=5)
         
-        yield from merge_sort_helper(l, m)
-        yield from merge_sort_helper(m+1, r)
-
-        # MERGE STEP - rebuild the array section
-        left_vals = values[l:m+1][:]
-        right_vals = values[m+1:r+1][:]
+        # SPEED SLIDER
+        self.speed_label = Label(self.settings_frame, text="SPEED", bg='#8000FF', fg='white', font=('Arial', 9, 'bold'))
+        self.speed_label.pack(pady=(10, 0))
         
-
-        i = j = 0
-        k = l
-
-        while i < len(left_vals) and j < len(right_vals):
-            
-            if left_vals[i] <= right_vals[j]:
-                values[k] = left_vals[i]
-                i += 1
-
-
-            else:
-                values[k] = right_vals[j]
-                j += 1
-            
-            k += 1
-
-
-        while i < len(left_vals):
-            values[k] = left_vals[i]
-            i += 1
-            k += 1
-
-
-        while j < len(right_vals):
-
-            values[k] = right_vals[j]
-            j += 1
-            k += 1
-
+        self.speed_slider = Scale(
+            self.settings_frame,
+            from_=1,
+            to=67,  # https://en.wikipedia.org/wiki/6-7_meme | i hope i won't fail :pray:
+            orient=HORIZONTAL,
+            length=200,
+            bg='#8000FF',
+            fg='white',
+            troughcolor='#410ec4'
+        )
+        self.speed_slider.set(1)
+        self.speed_slider.pack(pady=5)
         
-        # UPDATING THE VISUAL BARS to match the sorted values
-        for idx in range(l, r+1):
-            current_height = values[idx]
+        # START BUTTON
+        self.start_btn = Button(
+            self.settings_frame,
+            text="START SORT!",
+            command=self.start_sort,
+            bg='#00ff00',
+            font=('Arial', 11, 'bold'),
+            width=20
+        )
+        self.start_btn.pack(pady=10)
+        
+        # EXIT BUTTON
+        self.exit_btn = Button(
+            self.settings_frame,
+            text="EXIT",
+            command=self.window.quit,
+            bg='red',
+            fg='white',
+            font=('Arial', 10),
+            width=20
+        )
+        self.exit_btn.pack(side=BOTTOM, pady=10)
+    
+    #region HELPER FUNCTIONS
+    
+    def colorBar(self, bar, color):
+        self.canvas.itemconfig(bar, fill=color)
+    
+    def swap(self, pos0, pos1):
+        x0, _, x0b, _ = self.canvas.coords(pos0)
+        x1, _, x1b, _ = self.canvas.coords(pos1)
+        
+        self.canvas.itemconfig(pos0, fill='red')
+        self.canvas.itemconfig(pos1, fill='#00ff00')
+        
+        self.canvas.move(pos0, x1 - x0, 0)
+        self.canvas.move(pos1, x0 - x1, 0)
+    
+    #endregion
+    
+    #region GENERATE BARS FUNCTION
+    
+    def generate_bars(self):
+        self.canvas.delete('all')
+        self.bars = []
+        self.values = []
+        
+        heights = [random.randint(10, self.can_size - 10) for _ in range(self.num_bars)]
+        
+        for i in range(self.num_bars):
+            height = heights[i]
             
-            # updating bar height
-            canvas.coords(
-
-                bars[idx],
-                idx * bar_width,
-                can_size - current_height,
-                idx * bar_width + bar_width,
-                can_size
+            bar = self.canvas.create_rectangle(
+                i * self.bar_width,
+                self.can_size - height,
+                (i * self.bar_width) + self.bar_width,
+                self.can_size,
+                fill='white',
+                outline='#444444'
             )
-                        
-        colorBar(bars[idx], 'cyan')
-        yield
-
-
-def merge_sort():
-    global bars, values
-    yield from merge_sort_helper(0, len(values)-1)
-
-#endregion
-
-
-#region QUICK SORT
-
-def quick_sort_helper(low, high):
-    
-    
-    global bars, values
-
-
-    if low < high:
-        pivot = values[high]
-        i = low - 1
-       
-        for j in range(low, high):
+            
+            self.bars.append(bar)
+            self.values.append(height)
         
-            if values[j] <= pivot:
+        self.worker = None
+        self.is_verify = False
+    
+    #endregion
+    
+    #region BUBBLE SORT
+    
+    def bubble_sort(self):
+        n = len(self.values)
+        
+        for i in range(n - 1):
+            for j in range(n - i - 1):
                 
-                i += 1
-                values[i], values[j] = values[j], values[i]
-                bars[i], bars[j] = bars[j], bars[i]
-                swap(bars[i], bars[j])
+                if self.values[j] > self.values[j + 1]:
+                    self.values[j], self.values[j + 1] = self.values[j + 1], self.values[j]
+                    self.bars[j], self.bars[j + 1] = self.bars[j + 1], self.bars[j]
+                    self.swap(self.bars[j], self.bars[j + 1])
+                    yield
+                
+                else:
+                    self.colorBar(self.bars[j], 'white')
+    
+    #endregion
+    
+    #region INSERTION SORT
+    
+    def insertion_sort(self):
+        for i in range(1, len(self.values)):
+            key = self.values[i]
+            key_bar = self.bars[i]
+            j = i - 1
+            
+            while j >= 0 and self.values[j] > key:
+                self.values[j + 1] = self.values[j]
+                self.bars[j + 1], self.bars[j] = self.bars[j], self.bars[j + 1]
+                self.swap(self.bars[j + 1], self.bars[j])
+                
                 yield
-
-
-            else:
-                colorBar(bars[j], 'white')
-        
-        
-        values[i+1], values[high] = values[high], values[i+1]
-        bars[i+1], bars[high] = bars[high], bars[i+1]
-        swap(bars[i+1], bars[high])
-        
-        yield
-        
-
-        yield from quick_sort_helper(low, i)
-        yield from quick_sort_helper(i+2, high)
-
-
-def quick_sort():
+                j -= 1
+            
+            self.values[j + 1] = key
+            self.bars[j + 1] = key_bar
     
-    global bars, values
-    yield from quick_sort_helper(0, len(values)-1)
-
-#endregion
-
-
-#region VERIFICATION
-
-def verify():
-    global bars, values
+    #endregion
     
-    for i in range(len(values) - 1):
-        if values[i] <= values[i + 1]:
-            colorBar(bars[i], 'green')
+    #region MERGE SORT
+    
+    def merge_sort_helper(self, l, r):
+        if l < r:
+            m = (l + r) // 2
+            
+            yield from self.merge_sort_helper(l, m)
+            yield from self.merge_sort_helper(m + 1, r)
+            
+            # MERGE STEP - rebuild the array section
+            left_vals = self.values[l:m + 1][:]
+            right_vals = self.values[m + 1:r + 1][:]
+            
+            i = j = 0
+            k = l
+            
+            while i < len(left_vals) and j < len(right_vals):
+                
+                if left_vals[i] <= right_vals[j]:
+                    self.values[k] = left_vals[i]
+                    i += 1
+                
+                else:
+                    self.values[k] = right_vals[j]
+                    j += 1
+                
+                k += 1
+            
+            while i < len(left_vals):
+                self.values[k] = left_vals[i]
+                i += 1
+                k += 1
+            
+            while j < len(right_vals):
+                self.values[k] = right_vals[j]
+                j += 1
+                k += 1
+            
+            # UPDATING THE VISUAL BARS to match the sorted values
+            for idx in range(l, r + 1):
+                current_height = self.values[idx]
+                
+                # updating bar height
+                self.canvas.coords(
+                    self.bars[idx],
+                    idx * self.bar_width,
+                    self.can_size - current_height,
+                    idx * self.bar_width + self.bar_width,
+                    self.can_size
+                )
+            
+            self.colorBar(self.bars[idx], 'cyan')
             yield
     
-
-    colorBar(bars[-1], 'green')
-
-#endregion
-
-
-#region ANIMATION 
-
-def animate():
+    def merge_sort(self):
+        yield from self.merge_sort_helper(0, len(self.values) - 1)
     
-    global worker, is_verify
+    #endregion
     
-    if worker is not None:
+    #region QUICK SORT
     
-        try:
-            next(worker)
-            #speed controller
-            speed = 68 - speed_slider.get()  
-            window.after(speed, animate)
+    def quick_sort_helper(self, low, high):
+        if low < high:
+            pivot = self.values[high]
+            i = low - 1
+            
+            for j in range(low, high):
+                
+                if self.values[j] <= pivot:
+                    i += 1
+                    self.values[i], self.values[j] = self.values[j], self.values[i]
+                    self.bars[i], self.bars[j] = self.bars[j], self.bars[i]
+                    self.swap(self.bars[i], self.bars[j])
+                    yield
+                
+                else:
+                    self.colorBar(self.bars[j], 'white')
+            
+            self.values[i + 1], self.values[high] = self.values[high], self.values[i + 1]
+            self.bars[i + 1], self.bars[high] = self.bars[high], self.bars[i + 1]
+            self.swap(self.bars[i + 1], self.bars[high])
+            
+            yield
+            
+            yield from self.quick_sort_helper(low, i)
+            yield from self.quick_sort_helper(i + 2, high)
+    
+    def quick_sort(self):
+        yield from self.quick_sort_helper(0, len(self.values) - 1)
+    
+    #endregion
+    
+    #region VERIFICATION
+    
+    def verify(self):
+        for i in range(len(self.values) - 1):
+            if self.values[i] <= self.values[i + 1]:
+                self.colorBar(self.bars[i], 'green')
+                yield
         
-        except StopIteration:
-            if not is_verify:
-                worker = verify()
-                is_verify = True
-                animate()
-            else:
-                is_verify = False
-                worker = None
-
-
-def start_sort():
+        self.colorBar(self.bars[-1], 'green')
     
-    global worker
-    algo = variable.get()
+    #endregion
     
-    if algo == "Bubble Sort":
-        worker = bubble_sort()
+    #region ANIMATION
     
-    elif algo == "Insertion Sort":
-        worker = insertion_sort()
+    def animate(self):
+        if self.worker is not None:
+            try:
+                next(self.worker)
+                # speed controller
+                speed = 68 - self.speed_slider.get()
+                self.window.after(speed, self.animate)
+            
+            except StopIteration:
+                if not self.is_verify:
+                    self.worker = self.verify()
+                    self.is_verify = True
+                    self.animate()
+                else:
+                    self.is_verify = False
+                    self.worker = None
     
-    elif algo == "Mergr Sort":
-        worker = merge_sort()
+    def start_sort(self):
+        algo = self.variable.get()
+        
+        if algo == "Bubble Sort":
+            self.worker = self.bubble_sort()
+        
+        elif algo == "Insertion Sort":
+            self.worker = self.insertion_sort()
+        
+        elif algo == "Merge Sort":
+            self.worker = self.merge_sort()
+        
+        elif algo == "Quick Sort":
+            self.worker = self.quick_sort()
+        
+        self.animate()
     
-    elif algo == "Quick Sort":
-        worker = quick_sort()
+    #endregion
     
-    animate()
-
-#endregion
-
-
-#region GUI CONTROLS
-
-# GENERATE BUTTON 
-generate_btn = Button(
-    settings_frame, 
-    text="GENERATE!", 
-    command=generate_bars, 
-    bg='red',
-    font=('Arial', 10, 'bold'),
-    width=20
-)
-generate_btn.pack(pady=10)
+    def run(self):
+        self.window.mainloop()
 
 
-# Selection MENU
-
-variable = StringVar(window)
-variable.set(OPTIONS[0])
-dropdown = OptionMenu(settings_frame, variable, *OPTIONS)
-dropdown.config(width=18, bg='white')
-dropdown.pack(pady=5)
-
-
-# SPEED SLIDER 
-speed_label = Label(settings_frame, text="SPEED", bg='#8000FF', fg='white', font=('Arial', 9, 'bold'))
-speed_label.pack(pady=(10,0))
-
-speed_slider = Scale(
-    settings_frame, 
-    from_=1, 
-    to=67, #https://en.wikipedia.org/wiki/6-7_meme | i hope i won't fail :pray:
-    orient=HORIZONTAL, 
-    length=200,
-    bg='#8000FF',
-    fg='white',
-    troughcolor='#410ec4'
-)
-
-
-speed_slider.set(1)
-speed_slider.pack(pady=5)
-
-
-# START BUTTON
-start_btn = Button(
-    settings_frame, 
-    text="START SORT!", 
-    command=start_sort, 
-    bg='#00ff00',
-    font=('Arial', 11, 'bold'),
-    width=20
-)
-start_btn.pack(pady=10)
-
-
-# EXIT BUTTON
-exit_btn = Button(
-    settings_frame, 
-    text="EXIT", 
-    command=window.quit, 
-    bg='red',
-    fg='white',
-    font=('Arial', 10),
-    width=20
-)
-exit_btn.pack(side=BOTTOM, pady=10)
-
-#endregion
-
-
-# GENERATE INITIAL BARS
-generate_bars()
-
-window.mainloop()
+# Run the application
+if __name__ == "__main__":
+    app = SortVisualizer()
+    app.run()
