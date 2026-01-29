@@ -15,9 +15,25 @@ OPTIONS = [
 
 
 class SortVisualizer:
-    
+    """Main class for the sorting visualizer application."""
+
+
     def __init__(self):
-        # State variables (previously global)
+        #(previously global variables)
+        """
+        bars (list): list of canvas rectangle objects representing values
+        values (list): list of integer heights corresponding to each bar
+        bar_width (int): width of each bar in pixels
+        can_size (int): canvas size (width and height)
+        num_bars (int): number of bars to generate
+        worker (generator): currently running sorting algorithm generator
+        is_verify (bool): flag indicating if verification animation is running
+        window (Tk): main tkinter window
+        canvas (Canvas): canvas widget for drawing bars
+        settings_frame (Frame): frame containing control buttons and settings
+        
+        """
+
         self.bars = []
         self.values = []
         self.bar_width = 10
@@ -50,7 +66,7 @@ class SortVisualizer:
         self.generate_bars()
     
     def _create_controls(self):
-        # GENERATE BUTTON
+        """creates all GUI control elements (buttons, dropdown, speed slider, exit button)"""
         self.generate_btn = Button(
             self.settings_frame,
             text="GENERATE!",
@@ -75,7 +91,7 @@ class SortVisualizer:
         self.speed_slider = Scale(
             self.settings_frame,
             from_=1,
-            to=67,  # https://en.wikipedia.org/wiki/6-7_meme | i hope i won't fail :pray:
+            to=67, #it was probably unnecessary :)
             orient=HORIZONTAL,
             length=200,
             bg='#8000FF',
@@ -203,6 +219,7 @@ class SortVisualizer:
             yield from self.merge_sort_helper(l, m)
             yield from self.merge_sort_helper(m + 1, r)
             
+
             # MERGE STEP - rebuild the array section
             left_vals = self.values[l:m + 1][:]
             right_vals = self.values[m + 1:r + 1][:]
@@ -245,8 +262,8 @@ class SortVisualizer:
                     self.can_size
                 )
             
-            self.colorBar(self.bars[idx], 'cyan')
-            yield
+                self.colorBar(self.bars[idx], 'green') 
+                yield
     
     def merge_sort(self):
         yield from self.merge_sort_helper(0, len(self.values) - 1)
@@ -276,8 +293,12 @@ class SortVisualizer:
             self.bars[i + 1], self.bars[high] = self.bars[high], self.bars[i + 1]
             self.swap(self.bars[i + 1], self.bars[high])
             
+            
+            
             yield
             
+
+
             yield from self.quick_sort_helper(low, i)
             yield from self.quick_sort_helper(i + 2, high)
     
@@ -289,6 +310,7 @@ class SortVisualizer:
     #region VERIFICATION
     
     def verify(self):
+        """verify that the array is sorted by coloring bars green"""
         for i in range(len(self.values) - 1):
             if self.values[i] <= self.values[i + 1]:
                 self.colorBar(self.bars[i], 'green')
@@ -301,6 +323,14 @@ class SortVisualizer:
     #region ANIMATION
     
     def animate(self):
+        """control the animation loop using the generator pattern.
+        repetedly calls next() on the worker generator to advance the sorting
+        algorithm one step at a time. the delay between steps is controlled by
+        the speed slider. when sorting completes, automatically starts the
+        verification animation.
+        """
+
+
         if self.worker is not None:
             try:
                 next(self.worker)
